@@ -1,0 +1,89 @@
+---
+title: "PlotLogisticData"
+author: "Richard Careaga"
+date: "5/14/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggthemes)
+library(kableExtra)
+library(pander)
+library(readr)
+library(tidyverse)
+
+panderOptions('digits', 4)
+
+# Hosner Table 1.2 and Figure 1.2 logistic equivalent
+# of scatterplot
+
+# find the median of two ages
+
+md <- function(x,y) {median(c(x,y))}
+
+df <- readr::read_tsv("CHDAGE/CHDAGE.txt")
+
+# Classify ages into 5 or 10 year cohorts
+
+df <- df %>% mutate(cohort = ifelse(AGE < 30,1, 0))
+df <- df %>% mutate(cohort = ifelse(AGE >= 30 & AGE <= 34,2, cohort))
+df <- df %>% mutate(cohort = ifelse(AGE >= 30 & AGE <= 34,2, cohort))
+df <- df %>% mutate(cohort = ifelse(AGE >= 35 & AGE <= 39,3, cohort))
+df <- df %>% mutate(cohort = ifelse(AGE >= 40 & AGE <= 44,4, cohort))
+df <- df %>% mutate(cohort = ifelse(AGE >= 45 & AGE <= 49,5, cohort))
+df <- df %>% mutate(cohort = ifelse(AGE >= 50 & AGE <= 54,6, cohort))
+df <- df %>% mutate(cohort = ifelse(AGE >= 55 & AGE <= 59,7, cohort))
+df <- df %>% mutate(cohort = ifelse(AGE >= 60 & AGE <= 90,8, cohort))
+
+# use medians of cohort endpoints for plotting
+# medians obtained by hand using md function
+# 
+df <- df %>% mutate(plotpoint = ifelse(cohort == 1,24.5, 0))
+df <- df %>% mutate(plotpoint = ifelse(cohort == 2,32, plotpoint))
+df <- df %>% mutate(plotpoint = ifelse(cohort == 3,37, plotpoint))
+df <- df %>% mutate(plotpoint = ifelse(cohort == 4,42, plotpoint))
+df <- df %>% mutate(plotpoint = ifelse(cohort == 5,47, plotpoint))
+df <- df %>% mutate(plotpoint = ifelse(cohort == 6,52, plotpoint))
+df <- df %>% mutate(plotpoint = ifelse(cohort == 7,57, plotpoint))
+df <- df %>% mutate(plotpoint = ifelse(cohort == 8,65, plotpoint))
+
+# Create a text column for cohort lables
+
+df <- df %>% mutate(AgeGroup = ifelse(cohort == 1,"20-29", 0))
+df <- df %>% mutate(AgeGroup = ifelse(cohort == 2,"30-34", AgeGroup))
+df <- df %>% mutate(AgeGroup = ifelse(cohort == 3,"35-39", AgeGroup))
+df <- df %>% mutate(AgeGroup = ifelse(cohort == 4,"40-44", AgeGroup))
+df <- df %>% mutate(AgeGroup = ifelse(cohort == 5,"45-49", AgeGroup))
+df <- df %>% mutate(AgeGroup = ifelse(cohort == 6,"50-54", AgeGroup))
+df <- df %>% mutate(AgeGroup = ifelse(cohort == 7,"55-59", AgeGroup))
+df <- df %>% mutate(AgeGroup = ifelse(cohort == 8,"60-70", AgeGroup))
+
+# split CHD column
+
+df <- df %>% mutate(absent  = ifelse(CHD == 0,1,0))
+df <- df %>% mutate(present = ifelse(CHD == 1,1,0))
+
+# Create table with plotting information
+# 
+means_tab <- df %>% group_by(AgeGroup) %>%  summarize(n = n(), Absent = sum(absent), Present = sum(present), Mean = mean(CHD), plotpoint = mean(plotpoint)) %>% ungroup()
+
+# Create plot
+# 
+logplot <- ggplot(data = means_tab, aes(x = plotpoint, y = Mean)) + xlab("Age (years)") + ylab("Coronary Heart Disease (mean)")
+
+```
+
+```{r}
+# omit plotting points
+pander(means_tab %>% select(-plotpoint))
+```
+
+```{r}
+# line with points at inflections
+logplot + geom_line() + geom_point() + theme_tufte()
+```
+
+
