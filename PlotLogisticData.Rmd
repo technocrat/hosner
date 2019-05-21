@@ -18,7 +18,7 @@ suppressPackageStartupMessages(library(tidyverse))
 panderOptions("table.style", "rmarkdown")
 ```
 
-```{r, echo=FALSE, results='hide', message=FALSE}
+```{r, echo=FALSE, message=FALSE}
 
 # Hosner Table 1.2 and Figure 1.2 logistic equivalent
 # of scatterplot
@@ -89,7 +89,7 @@ Data from Table 1.1. Replicate binned summary from Table 1.2
 pander(means_tab %>% select(-plotpoint), justify = 'right', digits = 3)
 ```
 
-Replicate line graph used in place of scattergraph
+## Replicate line graph used in place of scattergraph
 
 ```{r, echo=FALSE}
 # line with points at inflections
@@ -123,10 +123,11 @@ Because the outcome, $Y$, is binary, rather than continous, we choose logistic r
 
 ```{r, echo=FALSE, message=FALSE}
 icu <- read_tsv("ICU.txt")
-
+p <- ggplot(data = icu, aes(x = AGE, y = STA)) + geom_point() + theme_tufte()
+p
 ```
 
-## Cohorts
+## Scatterplot and cohort table
 
 ```{r, echo=FALSE}
 df <- icu
@@ -162,18 +163,23 @@ df <- df %>% mutate(Lived = ifelse(STA == 1,1,0))
 
 means <- df %>% group_by(cohort) %>% summarize(Mean = mean(STA), plotpoint = mean(plotpoint))
 means_tab <- df %>% group_by(AgeGroup) %>%  summarize(n = n(), Died = sum(Dead), Lived = sum(Lived), Mean = mean(STA), plotpoint = mean(plotpoint)) %>% ungroup()
+pander(means_tab %>% select(-plotpoint), justify = 'right', digits = 3)
 ```
 
-```{r, echo = FALSE}
-p <- ggplot(data = icu, aes(x = AGE, y = STA)) + geom_point() + theme_tufte()
-p
-pander(means_tab %>% select(-plotpoint), justify = 'right', digits = 3)
+Replicate line graph used in place of scatterplot
 
+```{r, echo=FALSE}
 p <- ggplot(data = means, aes(x = plotpoint, y = Mean))
 p + geom_line() + xlim(15,95) + geom_point() + xlab("Age") + ylab("Mean Dead") + theme_tufte()
 ```
 
+## Likelihood and log likelihood
+
+$$l\beta = \prod_{i = 1}^n\pi(x)^{y_i}[1 - \pi(x)]^{1-y_i}, n = 200$$
 
 
+$$L(\beta) = ln[l(\beta)] = \prod_{i = 1}^n{y, ln[\pi(x_i)]), ln[1 - \pi(x_i)]}$$
+## Likelihood estimates
 
+To find $\beta$ that maximizes $L(\beta)$, we cannot differentiate the sum of squared deviation functions with repect to $\beta$ because they are not linear.
 
