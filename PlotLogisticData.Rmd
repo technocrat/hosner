@@ -79,7 +79,6 @@ p <- ggplot(data = means_tab, aes(x = plotpoint, y = Mean)) + xlab("Age (years)"
 
 ```
 
-
 # CHD vs. Age
 
 Data from Table 1.1. Replicate binned summary from Table 1.2
@@ -175,11 +174,54 @@ p + geom_line() + xlim(15,95) + geom_point() + xlab("Age") + ylab("Mean Dead") +
 
 ## Likelihood and log likelihood
 
+
+
+
 $$l\beta = \prod_{i = 1}^n\pi(x)^{y_i}[1 - \pi(x)]^{1-y_i}, n = 200$$
 
 
 $$L(\beta) = ln[l(\beta)] = \prod_{i = 1}^n{y, ln[\pi(x_i)]), ln[1 - \pi(x_i)]}$$
+
 ## Likelihood estimates
 
-To find $\beta$ that maximizes $L(\beta)$, we cannot differentiate the sum of squared deviation functions with repect to $\beta$ because they are not linear.
+To find $\beta$ that maximizes $L(\beta)$, we cannot differentiate the sum of squared deviation functions with respect to $\beta$ because they are not linear.
 
+p.9
+
+> To find the value of $\beta$ that maximizes $L\beta$, we differentiate $L\beta$ and set the resulting expressions to zero. 
+
+$$\Sigma[y_i - \pi(x_i)] = 0$$
+
+$$\Sigma{x_i}[y_i - \pi(x_i)] = 0 $$
+
+(*n* understood to equal 200 in each case)
+
+Eq. (1.7) The fitted value ($e$ is Euler's constant, idiot)
+
+Maximum likelihood estimators:
+
+$$\hat{\pi} = \frac{e^{\hat{\beta_0} + \hat{\beta_1}}x}{1 + e^{\hat{\beta_0} + \zta_1}}x}$$
+These come *free* in the model summary as the coefficients for the intercept and the model terms. Can find an R function or object that includes log.likelihood, however.
+
+Estimated logit $\hat{g}(x) = \hat{\beta_0} + \hat{\beta_1}x$
+
+Easy enough to fix with glm
+
+    > icu.fit$coefficients
+    (Intercept)         AGE 
+    -3.05851323  0.02754261 
+
+    logit <- function(fit) {
+        fit$coefficients[1] + fit$coefficients[2] * sum(predict(fit))
+    }
+
+# Convert log odds to probabilities
+
+Bruce & Bruce p 188
+
+    pred <- predict(logistic_model)
+    prob <- 1/(1 + exp(pred))
+
+# Get log-likelihood
+
+    logLik(model)
