@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(ggthemes))
 suppressPackageStartupMessages(library(kableExtra))
+suppressPackageStartupMessages(library(ISwR))
 suppressPackageStartupMessages(library(pander))
 suppressPackageStartupMessages(library(readr))
 suppressPackageStartupMessages(library(tidyverse))
@@ -93,7 +94,7 @@ pander(means_tab %>% select(-plotpoint), justify = 'right', digits = 3)
 ```{r, echo=FALSE}
 # line with points at inflections
 
-p <- ggplot(data = means_tab, aes(x = plotpoint, y = Mean)) + geom_line() + geom_point() + xlab("Age (years)") + ylab("Coronary Heart Disease (mean)")
+p <- ggplot(data = means_tab, aes(x = plotpoint, y = Mean)) + geom_line() + geom_point() + xlab("Age (years)") + ylab("Coronary Heart Disease (mean)") + theme_tufte()
 p
 ```
 
@@ -199,8 +200,10 @@ $$\Sigma{x_i}[y_i - \pi(x_i)] = 0 $$
 Eq. (1.7) The fitted value ($e$ is Euler's constant, idiot)
 
 Maximum likelihood estimators:
+\hat{\pi} = \frac
 
-$$\hat{\pi} = \frac{e^{\hat{\beta_0} + \hat{\beta_1}}x}{1 + e^{\hat{\beta_0} + \zta_1}}x}$$
+$$\frac{e^{\beta_0 + \beta_1x}}{1 + e^{\beta_0 + \beta_1x}}$$
+
 These come *free* in the model summary as the coefficients for the intercept and the model terms. Can find an R function or object that includes log.likelihood, however.
 
 Estimated logit $\hat{g}(x) = \hat{\beta_0} + \hat{\beta_1}x$
@@ -225,3 +228,56 @@ Bruce & Bruce p 188
 # Get log-likelihood
 
     logLik(model)
+
+#   The mystery of $\chi^{2}_{df}$
+
+Peter Dalgaard, *Introductory Statistics with R* $\S$ 13.2 looked to give a walk-through
+
+```{r}
+no.yes <- c("No","Yes")
+smoking <-  gl(2,1,8,no.yes)
+obesity <-  gl(2,2,8,no.yes)
+snoring <-  gl(2,4,8, no.yes)
+n.tot <- c(60,17,8,2,187,85,51,23)
+n.hyp <- c(5,2,1,0,35,13,15,8)
+data.frame(smoking,obesity,snoring,n.tot,n.hyp)
+# need either a matrix or a portion in each cell, using matrix
+hyp.tbl <- cbind(n.hyp, n.tot-n.hyp)
+glm.hyp <- glm(hyp.tbl ~ smoking + obesity + snoring, binomial)
+summary(glm.hyp)
+```
+
+
+
+, which went well until p. 232:
+
+> The asymptotic dustribution of the residual deviance is a $\chi^2$ distribution with the stated degrees of freedom, so even though the approximation may be poor, nothing in the data indicates that the model is wrong (the 5% significance limit is 9.49 and the value found here is 1.62).
+
+and on page 233,
+
+> What you would normally be interested in is the difference from the residual deviance, here 14.13 - 1.62 = 12.51, which can be used for a joint test for whether any effects are present in the model. In the present case a *p*-value of approximately 0.6% is obtained.
+
+It was not obvious where these come from. There are two cases:
+
+*Given* a selected *p*-value, and the difference of the number of degrees of freedom between the null deviance and the residual, what is the corresponding deviance? (The first problem.)
+
+*Given* a difference in the null and residual deviance and the difference in the number of degrees of freedom between the null and residual deviances, what is the corresponding *p*-value? (The second.)
+
+```{r}
+# First problem
+qchisq(0.05,4, lower.tail = FALSE)
+# Second probmem
+pchisq(14.1259 - 1.6184, 7 - 4, lower.tail = FALSE)
+```
+
+
+We can add a table of correlations to the summary with
+
+```{r}
+summary(glm.hyp, corr = TRUE)
+
+```
+
+The one obvious thing from the *z* score of smoking is that it can be eliminated from the model. As Hosmer *et al.* say, we are looking to see if the coefficient adds anything to the NULL model.
+
+The null hypothesis is that adding variables has no effect. If residual deviance go down, that's evidence against the null hypothesis.
